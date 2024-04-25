@@ -1,0 +1,12 @@
+version: '1'
+
+services:
+  db:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=nestjsDB
+      - POSTGRES_USER=nestUser
+      - POSTGRES_PASSWORD=nestPassword
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
