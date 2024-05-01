@@ -1,8 +1,8 @@
 import { Column, Entity, PrimaryGeneratedColumn, OneToMany, Relation } from 'typeorm';
-// import { BaseEntity } from '../../common/entity';
+import { BaseEntity } from '../../common/entity';
 // import { RefreshToken } from './refresh-token.entity';
-// import { AccessToken } from './access-token.entity';
-// import { AccessLog } from './access-log.entity';
+import { AccessToken } from './access-token.entity';
+import { AccessLog } from './access-log.entity';
 
 export type UserRole = 'admin' | 'user';
 
@@ -32,12 +32,12 @@ export class User {
   @Column({ default: false })
   isPersonalInfoVerified: boolean;
 
-//   @OneToMany(() => AccessToken, (token) => token.user)
-//   accessToken: Relation<AccessToken[]>;
+  @OneToMany(() => AccessToken, (token) => token.user)
+  accessToken: Relation<AccessToken[]>;
 
-//   @OneToMany(() => RefreshToken, (token) => token.user)
-//   refreshToken: Relation<RefreshToken[]>;
+  // @OneToMany(() => RefreshToken, (token) => token.user)
+  // refreshToken: Relation<RefreshToken[]>;
 
-//   @OneToMany(() => AccessLog, (log) => log.user)
-//   accessLogs: Relation<AccessLog[]>;
+  @OneToMany(() => AccessLog, (log) => log.user)
+  accessLogs: Relation<AccessLog[]>;
 }
