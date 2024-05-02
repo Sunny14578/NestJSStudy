@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { BusinessException } from 'src/exception/BusinesException';
-import { AccessTokenRepository, AccessLogRepository } from '../repositories';
+import { AccessTokenRepository, AccessLogRepository, RefreshTokenRepository } from '../repositories';
 import * as argon2 from 'argon2';
 
 @Injectable()
@@ -19,6 +19,7 @@ export class AuthService {
         private readonly jwtService: JwtService,
         private readonly accessTokenRepository: AccessTokenRepository,
         private readonly accessLogRepository: AccessLogRepository,
+        private readonly refreshTokenRepository: RefreshTokenRepository,
     ) {}
 
     async login(email: string, plainPassword: string, req: RequestInfo): 
@@ -60,6 +61,36 @@ export class AuthService {
         );
     }
 
+    async refreshAccessToken(refreshToken: string): Promise<string> {
+        try {
+          const { exp, ...payload } = await this.jwtService.verifyAsync(
+            refreshToken,
+            {
+              secret: this.configService.get<string>('JWT_SECRET'),
+            },
+          );
+    
+          const user = await this.userRepository.findOneBy({ id: payload.sub });
+          if (!user) {
+            throw new BusinessException(
+              'auth',
+              'user-not-found',
+              'User not found',
+              HttpStatus.UNAUTHORIZED,
+            );
+          }
+    
+          return this.createAccessToken(user, payload as TokenPayload);
+        } catch (error) {
+          throw new BusinessException(
+            'auth',
+            'invalid-refresh-token',
+            'Invalid refresh token',
+            HttpStatus.UNAUTHORIZED,
+          );
+        }
+      }
+
     createTokenPayload(userId: number): TokenPayload {
         return{
             sub: userId,
@@ -84,7 +115,17 @@ export class AuthService {
 
     async createRefreshToken(user: User, payload: TokenPayload): Promise<string> {
         const expiresIn = this.configService.get<string>('REFRESH_TOKEN_EXPIRY');
-        return;
+        const token = this.jwtService.sign(payload, { expiresIn });
+        const expiresAt = this.calculateExpiry(expiresIn);
+
+        await this.refreshTokenRepository.saveRefreshToken(
+            payload.jti,
+            user,
+            token,
+            expiresAt,
+        );
+
+        return token;
     }
 
     private calculateExpiry(expiry: string): Date {
